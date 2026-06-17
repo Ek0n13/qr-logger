@@ -1,6 +1,6 @@
 {
   "name": "qr-logger",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "alexekon.cc",
@@ -19,8 +19,7 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "build:win:publish": "pnpm build && dotenv -e .env -- electron-builder --win --publish always",
-    "release:patch": "pnpm version patch && git push && git push --tags && pnpm build:win:publish"
+    "release:patch": "pnpm version patch && git push --follow-tags"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
