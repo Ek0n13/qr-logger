@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.ek0n13.qrlogger
 productName: qr-logger
 directories:
   buildResources: build
@@ -39,7 +39,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: ek0n13
+  repo: qr-logger
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
