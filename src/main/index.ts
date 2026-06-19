@@ -5,6 +5,7 @@ import { autoUpdater } from 'electron-updater'
 import icon from '../../resources/icon.png?asset'
 
 let mainWindow: BrowserWindow | null = null
+let hasCheckedForUpdates = false
 
 type UpdateStatus = {
   status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
@@ -104,6 +105,26 @@ function createWindow(): void {
 
   window.on('ready-to-show', () => {
     window.show()
+
+    if (hasCheckedForUpdates) {
+      return
+    }
+
+    hasCheckedForUpdates = true
+
+    if (!app.isPackaged) {
+      sendUpdateStatus({
+        status: 'not-available',
+        message: 'Update checks run from packaged builds.'
+      })
+      return
+    }
+
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((error) => {
+        sendUpdateStatus({ status: 'error', message: error.message })
+      })
+    }, 3000)
   })
 
   window.webContents.setWindowOpenHandler((details) => {
@@ -139,14 +160,6 @@ app.whenReady().then(() => {
 
   configureUpdates()
   createWindow()
-
-  if (app.isPackaged) {
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch((error) => {
-        sendUpdateStatus({ status: 'error', message: error.message })
-      })
-    }, 3000)
-  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
