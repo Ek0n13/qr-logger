@@ -11,6 +11,7 @@ import {
   SidebarProvider
 } from '@renderer/components/ui/sidebar'
 import { cn } from '@renderer/lib/utils'
+import { ArrowUpFromLine, ScanSearch, List } from 'lucide-react'
 
 type UpdateStatus = Awaited<ReturnType<Window['api']['updates']['check']>>
 
@@ -19,6 +20,8 @@ const UPDATE_TOAST_ID = 'update-status'
 function showUpdateToast(status: UpdateStatus): void {
   switch (status.status) {
     case 'checking':
+      return
+
     case 'downloading':
       toast.loading(status.message, { id: UPDATE_TOAST_ID })
       return
@@ -53,7 +56,10 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
 
   const hasUpdate = updateStatus.status === 'available' || updateStatus.status === 'downloaded'
   const hasUpdateError = updateStatus.status === 'error'
+  const isUpdateChecking = updateStatus.status === 'checking'
   const isUpdateBusy = updateStatus.status === 'checking' || updateStatus.status === 'downloading'
+  const showUpdateBadge = isUpdateChecking || hasUpdate || hasUpdateError
+  const updateBadgeText = hasUpdate ? '1' : hasUpdateError ? '!' : '...'
 
   useEffect(() => {
     let isMounted = true
@@ -110,25 +116,39 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
       <Sidebar collapsible="icon" className="border-r bg-zinc-800 text-zinc-300">
         <SidebarHeader className="items-center p-1">
           <Button variant="ghost" size="icon-lg" aria-label="Top sidebar action">
-            T
+            <ScanSearch className="size-6" />
+          </Button>
+          <Button variant="ghost" size="icon-lg" aria-label="Top sidebar action 2">
+            <List className="size-6" />
           </Button>
         </SidebarHeader>
 
         <SidebarFooter className="mt-auto items-center p-1">
-          <Button
-            variant="ghost"
-            size="icon-lg"
-            className={cn(
-              hasUpdate && 'bg-green-600 text-white hover:bg-green-500 hover:text-white',
-              hasUpdateError && 'bg-red-600 text-white hover:bg-red-500 hover:text-white'
+          <div className="relative flex justify-center">
+            {showUpdateBadge && (
+              <span
+                className={cn(
+                  'pointer-events-none absolute -right-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none text-white shadow-sm',
+                  hasUpdateError ? 'bg-red-600' : 'bg-blue-600',
+                  isUpdateChecking && 'animate-pulse'
+                )}
+                aria-hidden="true"
+              >
+                {updateBadgeText}
+              </span>
             )}
-            aria-label={updateStatus.message}
-            title={updateStatus.message}
-            disabled={isUpdateBusy || !hasUpdate}
-            onClick={handleUpdateClick}
-          >
-            B
-          </Button>
+            <Button
+              className="cursor-pointer"
+              variant="ghost"
+              size="icon-lg"
+              aria-label={updateStatus.message}
+              title={updateStatus.message}
+              disabled={isUpdateBusy || !hasUpdate}
+              onClick={handleUpdateClick}
+            >
+              <ArrowUpFromLine className="size-6" />
+            </Button>
+          </div>
         </SidebarFooter>
       </Sidebar>
 
