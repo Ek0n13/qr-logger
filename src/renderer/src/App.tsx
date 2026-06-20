@@ -1,11 +1,17 @@
-import { AppSidebar } from '@renderer/components/AppSidebar'
+import { useState } from 'react'
+
+import { AppSidebar, type AppPage } from '@renderer/components/AppSidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
+import { LogsPage } from '@renderer/pages/LogsPage'
+import { ScanPage } from '@renderer/pages/ScanPage'
 
 function App(): React.JSX.Element {
+  const [currentPage, setCurrentPage] = useState<AppPage>('scan')
+
   return (
     <>
-      <AppSidebar>
-        <h1 className="p-2 border-2">hello world</h1>
+      <AppSidebar currentPage={currentPage} onPageChange={setCurrentPage}>
+        {currentPage === 'scan' ? <ScanPage /> : <LogsPage />}
       </AppSidebar>
       <Toaster richColors />
     </>

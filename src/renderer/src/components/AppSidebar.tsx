@@ -18,6 +18,8 @@ type UpdateStatus = Awaited<ReturnType<Window['api']['updates']['check']>>
 
 const UPDATE_TOAST_ID = 'update-status'
 
+type AppPage = 'scan' | 'logs'
+
 function showUpdateToast(status: UpdateStatus): void {
   switch (status.status) {
     case 'checking':
@@ -46,10 +48,12 @@ function showUpdateToast(status: UpdateStatus): void {
 }
 
 type AppSidebarProps = {
+  currentPage: AppPage
+  onPageChange: (page: AppPage) => void
   children: React.ReactNode
 }
 
-function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
+function AppSidebar({ currentPage, onPageChange, children }: AppSidebarProps): React.JSX.Element {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({
     status: 'checking',
     message: 'Checking for updates...'
@@ -116,10 +120,22 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
     <SidebarProvider defaultOpen={false}>
       <Sidebar collapsible="icon" className="border-r bg-zinc-800 text-zinc-300">
         <SidebarHeader className="items-center p-1">
-          <Button variant="ghost" size="icon-lg" aria-label="Top sidebar action">
+          <Button
+            variant={currentPage === 'scan' ? 'secondary' : 'ghost'}
+            size="icon-lg"
+            aria-label="Scan"
+            aria-pressed={currentPage === 'scan'}
+            onClick={() => onPageChange('scan')}
+          >
             <ScanSearch className="size-6" />
           </Button>
-          <Button variant="ghost" size="icon-lg" aria-label="Top sidebar action 2">
+          <Button
+            variant={currentPage === 'logs' ? 'secondary' : 'ghost'}
+            size="icon-lg"
+            aria-label="Logs"
+            aria-pressed={currentPage === 'logs'}
+            onClick={() => onPageChange('logs')}
+          >
             <List className="size-6" />
           </Button>
         </SidebarHeader>
@@ -157,3 +173,4 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
 }
 
 export { AppSidebar }
+export type { AppPage }
