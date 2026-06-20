@@ -42,7 +42,10 @@ export const api = {
       ipcRenderer.invoke('qr-logs:delete', { qrCode }),
 
     list: (filters?: QrLogFilters): Promise<QrLogRecord[]> =>
-      ipcRenderer.invoke('qr-logs:list', filters)
+      ipcRenderer.invoke('qr-logs:list', filters),
+
+    get: (qrCode: string, includeDeleted = false): Promise<QrLogRecord | null> =>
+      ipcRenderer.invoke('qr-logs:get', { qrCode, includeDeleted })
   },
 
   updates: {

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import {
   findQrLogs,
+  getQrLogByQrCode,
   insertQrLog,
   markQrLogDeletedByQrCode,
   updateQrLogByQrCode,
@@ -23,6 +24,11 @@ type QrLogDeleteInput = {
   qrCode: string
 }
 
+type QrLogGetInput = {
+  qrCode: string
+  includeDeleted?: boolean
+}
+
 export function registerQrLogIpcHandlers(): void {
   ipcMain.handle('qr-logs:create', (_event, input: QrLogCreateInput): QrLogRecord => {
     return insertQrLog(requireNonEmptyString(input?.qrCode, 'qrCode'), requireName(input?.name))
@@ -41,6 +47,13 @@ export function registerQrLogIpcHandlers(): void {
 
   ipcMain.handle('qr-logs:list', (_event, filters?: QrLogFilters): QrLogRecord[] => {
     return findQrLogs(normalizeFilters(filters))
+  })
+
+  ipcMain.handle('qr-logs:get', (_event, input: QrLogGetInput): QrLogRecord | null => {
+    return getQrLogByQrCode(
+      requireNonEmptyString(input?.qrCode, 'qrCode'),
+      input?.includeDeleted === true
+    )
   })
 }
 

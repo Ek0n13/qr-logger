@@ -9,12 +9,12 @@ function App(): React.JSX.Element {
   const [currentPage, setCurrentPage] = useState<AppPage>('scan')
 
   return (
-    <>
+    <div className="bg-zinc-300">
       <AppSidebar currentPage={currentPage} onPageChange={setCurrentPage}>
         {currentPage === 'scan' ? <ScanPage /> : <LogsPage />}
       </AppSidebar>
       <Toaster richColors />
-    </>
+    </div>
   )
 }
 

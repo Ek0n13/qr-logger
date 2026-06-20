@@ -153,7 +153,7 @@ function AppSidebar({ currentPage, onPageChange, children }: AppSidebarProps): R
             {showUpdateBadge && (
               <Badge
                 className={cn(
-                  'size-4 pointer-events-none absolute -right-0.5 -top-1 z-10 min-w-5 rounded-full px-1 text-white tabular-nums shadow-sm',
+                  'size-4 pointer-events-none absolute -right-0.5 bottom-0 z-10 min-w-5 rounded-full px-1 text-white tabular-nums shadow-sm',
                   hasUpdateError ? 'bg-red-600' : 'bg-blue-600',
                   isUpdateChecking && 'animate-pulse'
                 )}
