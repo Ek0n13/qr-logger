@@ -11,6 +11,7 @@ export type QrLogRecord = {
   id: number
   qrCode: string
   name: string
+  product: string
   created: string
   updated: string
   deleted: string | null
@@ -18,6 +19,7 @@ export type QrLogRecord = {
 
 export type QrLogFilters = {
   name?: string
+  product?: string
   createdFrom?: string
   createdTo?: string
   updatedFrom?: string
@@ -28,6 +30,7 @@ export type QrLogFilters = {
 export type QrLogInput = {
   qrCode: string
   name: string
+  product?: string
 }
 
 export const api = {
@@ -43,6 +46,12 @@ export const api = {
 
     list: (filters?: QrLogFilters): Promise<QrLogRecord[]> =>
       ipcRenderer.invoke('qr-logs:list', filters),
+
+    suggestNames: (query: string): Promise<string[]> =>
+      ipcRenderer.invoke('qr-logs:suggest-names', { query, limit: 10 }),
+
+    suggestProducts: (query: string): Promise<string[]> =>
+      ipcRenderer.invoke('qr-logs:suggest-products', { query, limit: 10 }),
 
     get: (qrCode: string, includeDeleted = false): Promise<QrLogRecord | null> =>
       ipcRenderer.invoke('qr-logs:get', { qrCode, includeDeleted })

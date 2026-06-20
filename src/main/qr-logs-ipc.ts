@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 import {
+  findQrLogNameSuggestions,
+  findQrLogProductSuggestions,
   findQrLogs,
   getQrLogByQrCode,
   insertQrLog,
@@ -13,11 +15,13 @@ import {
 type QrLogCreateInput = {
   qrCode: string
   name: string
+  product?: string
 }
 
 type QrLogUpdateInput = {
   qrCode: string
   name: string
+  product?: string
 }
 
 type QrLogDeleteInput = {
@@ -29,15 +33,25 @@ type QrLogGetInput = {
   includeDeleted?: boolean
 }
 
+type QrLogSuggestionInput = {
+  query: string
+  limit?: number
+}
+
 export function registerQrLogIpcHandlers(): void {
   ipcMain.handle('qr-logs:create', (_event, input: QrLogCreateInput): QrLogRecord => {
-    return insertQrLog(requireNonEmptyString(input?.qrCode, 'qrCode'), requireName(input?.name))
+    return insertQrLog(
+      requireNonEmptyString(input?.qrCode, 'qrCode'),
+      requireName(input?.name),
+      requireOptionalProduct(input?.product) ?? ''
+    )
   })
 
   ipcMain.handle('qr-logs:update', (_event, input: QrLogUpdateInput): QrLogRecord | null => {
     return updateQrLogByQrCode(
       requireNonEmptyString(input?.qrCode, 'qrCode'),
-      requireName(input?.name)
+      requireName(input?.name),
+      requireOptionalProduct(input?.product)
     )
   })
 
@@ -47,6 +61,20 @@ export function registerQrLogIpcHandlers(): void {
 
   ipcMain.handle('qr-logs:list', (_event, filters?: QrLogFilters): QrLogRecord[] => {
     return findQrLogs(normalizeFilters(filters))
+  })
+
+  ipcMain.handle('qr-logs:suggest-names', (_event, input: QrLogSuggestionInput): string[] => {
+    return findQrLogNameSuggestions(
+      normalizeSuggestionQuery(input?.query),
+      normalizeSuggestionLimit(input?.limit)
+    )
+  })
+
+  ipcMain.handle('qr-logs:suggest-products', (_event, input: QrLogSuggestionInput): string[] => {
+    return findQrLogProductSuggestions(
+      normalizeSuggestionQuery(input?.query),
+      normalizeSuggestionLimit(input?.limit)
+    )
   })
 
   ipcMain.handle('qr-logs:get', (_event, input: QrLogGetInput): QrLogRecord | null => {
@@ -73,6 +101,18 @@ function requireName(value: unknown): string {
   return value.trim()
 }
 
+function requireOptionalProduct(value: unknown): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('product must be a non-empty string.')
+  }
+
+  return value.trim()
+}
+
 function normalizeFilters(filters: unknown): QrLogFilters {
   if (!filters || typeof filters !== 'object') {
     return {}
@@ -82,6 +122,7 @@ function normalizeFilters(filters: unknown): QrLogFilters {
 
   return {
     name: typeof input.name === 'string' ? input.name : undefined,
+    product: typeof input.product === 'string' ? input.product : undefined,
     createdFrom: normalizeDateInput(input.createdFrom),
     createdTo: normalizeDateInput(input.createdTo),
     updatedFrom: normalizeDateInput(input.updatedFrom),
@@ -96,4 +137,12 @@ function normalizeDateInput(value: unknown): QrLogDateInput | undefined {
   }
 
   return undefined
+}
+
+function normalizeSuggestionQuery(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeSuggestionLimit(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 10
 }

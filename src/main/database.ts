@@ -7,6 +7,7 @@ export type QrLogRecord = {
   id: number
   qrCode: string
   name: string
+  product: string
   created: string
   updated: string
   deleted: string | null
@@ -16,6 +17,7 @@ export type QrLogDateInput = Date | string
 
 export type QrLogFilters = {
   name?: string
+  product?: string
   createdFrom?: QrLogDateInput
   createdTo?: QrLogDateInput
   updatedFrom?: QrLogDateInput
@@ -27,10 +29,17 @@ type QrLogDatabaseRow = {
   id: number
   qr_code: string
   name: string
+  product: string
   created: string
   updated: string
   deleted: string | null
 }
+
+type QrLogSuggestionRow = {
+  value: string
+}
+
+type QrLogSuggestionColumn = 'name' | 'product'
 
 let database: Database.Database | null = null
 
@@ -61,6 +70,7 @@ function mapQrLogRow(row: QrLogDatabaseRow): QrLogRecord {
     id: row.id,
     qrCode: row.qr_code,
     name: row.name,
+    product: row.product,
     created: row.created,
     updated: row.updated,
     deleted: row.deleted
@@ -83,13 +93,23 @@ function ensureSchema(db: Database.Database): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       qr_code TEXT NOT NULL,
       name TEXT NOT NULL,
+      product TEXT NOT NULL DEFAULT '',
       created TEXT NOT NULL DEFAULT (datetime('now')),
       updated TEXT NOT NULL DEFAULT (datetime('now')),
       deleted TEXT
     );
+  `)
 
+  const columns = db.prepare('PRAGMA table_info(qr_logs)').all() as Array<{ name: string }>
+
+  if (!columns.some((column) => column.name === 'product')) {
+    db.exec(`ALTER TABLE qr_logs ADD COLUMN product TEXT NOT NULL DEFAULT ''`)
+  }
+
+  db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_qr_logs_qr_code ON qr_logs (qr_code);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_name ON qr_logs (name COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_qr_logs_product ON qr_logs (product COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_created ON qr_logs (created);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_updated ON qr_logs (updated);
   `)
@@ -106,31 +126,46 @@ export function getQrLogDatabase(): Database.Database {
   return database
 }
 
-export function insertQrLog(qrCode: string, name: string): QrLogRecord {
+export function insertQrLog(qrCode: string, name: string, product = ''): QrLogRecord {
   const db = getQrLogDatabase()
   const result = db
     .prepare(
       `
-        INSERT INTO qr_logs (qr_code, name)
-        VALUES (?, ?)
+        INSERT INTO qr_logs (qr_code, name, product)
+        VALUES (?, ?, ?)
       `
     )
-    .run(qrCode, name)
+    .run(qrCode, name, product)
 
   return getQrLogById(Number(result.lastInsertRowid))
 }
 
-export function updateQrLogByQrCode(qrCode: string, name: string): QrLogRecord | null {
+export function updateQrLogByQrCode(
+  qrCode: string,
+  name: string,
+  product?: string
+): QrLogRecord | null {
   const db = getQrLogDatabase()
-  const result = db
-    .prepare(
-      `
+  const result =
+    product === undefined
+      ? db
+          .prepare(
+            `
         UPDATE qr_logs
         SET name = ?, updated = datetime('now')
         WHERE qr_code = ? AND deleted IS NULL
       `
-    )
-    .run(name, qrCode)
+          )
+          .run(name, qrCode)
+      : db
+          .prepare(
+            `
+        UPDATE qr_logs
+        SET name = ?, product = ?, updated = datetime('now')
+        WHERE qr_code = ? AND deleted IS NULL
+      `
+          )
+          .run(name, product, qrCode)
 
   if (result.changes === 0) {
     return null
@@ -163,7 +198,7 @@ export function getQrLogByQrCode(qrCode: string, includeDeleted = false): QrLogR
   const row = db
     .prepare(
       `
-        SELECT id, qr_code, name, created, updated, deleted
+        SELECT id, qr_code, name, product, created, updated, deleted
         FROM qr_logs
         WHERE qr_code = ?${includeDeleted ? '' : ' AND deleted IS NULL'}
       `
@@ -184,6 +219,11 @@ export function findQrLogs(filters: QrLogFilters = {}): QrLogRecord[] {
   if (filters.name) {
     conditions.push("name LIKE @name ESCAPE '\\' COLLATE NOCASE")
     params.name = `%${escapeLikePattern(filters.name)}%`
+  }
+
+  if (filters.product) {
+    conditions.push("product LIKE @product ESCAPE '\\' COLLATE NOCASE")
+    params.product = `%${escapeLikePattern(filters.product)}%`
   }
 
   if (filters.createdFrom) {
@@ -210,10 +250,10 @@ export function findQrLogs(filters: QrLogFilters = {}): QrLogRecord[] {
   const rows = getQrLogDatabase()
     .prepare(
       `
-        SELECT id, qr_code, name, created, updated, deleted
+        SELECT id, qr_code, name, product, created, updated, deleted
         FROM qr_logs
         ${whereClause}
-        ORDER BY created DESC, id DESC
+        ORDER BY updated DESC, id DESC
       `
     )
     .all(params) as QrLogDatabaseRow[]
@@ -223,6 +263,18 @@ export function findQrLogs(filters: QrLogFilters = {}): QrLogRecord[] {
 
 export function findQrLogsByName(name: string): QrLogRecord[] {
   return findQrLogs({ name })
+}
+
+export function findQrLogsByProduct(product: string): QrLogRecord[] {
+  return findQrLogs({ product })
+}
+
+export function findQrLogNameSuggestions(query: string, limit = 10): string[] {
+  return findQrLogSuggestions('name', query, limit)
+}
+
+export function findQrLogProductSuggestions(query: string, limit = 10): string[] {
+  return findQrLogSuggestions('product', query, limit)
 }
 
 export function findQrLogsByCreatedRange(
@@ -248,7 +300,7 @@ function getQrLogById(id: number): QrLogRecord {
   const row = getQrLogDatabase()
     .prepare(
       `
-        SELECT id, qr_code, name, created, updated, deleted
+        SELECT id, qr_code, name, product, created, updated, deleted
         FROM qr_logs
         WHERE id = ?
       `
@@ -264,4 +316,37 @@ function getQrLogById(id: number): QrLogRecord {
 
 function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`)
+}
+
+function findQrLogSuggestions(
+  column: QrLogSuggestionColumn,
+  query: string,
+  limit: number
+): string[] {
+  const nextQuery = query.trim()
+  const nextLimit = Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit), 10)) : 10
+
+  if (!nextQuery) {
+    return []
+  }
+
+  const rows = getQrLogDatabase()
+    .prepare(
+      `
+        SELECT ${column} AS value
+        FROM qr_logs
+        WHERE deleted IS NULL
+          AND ${column} <> ''
+          AND ${column} LIKE @query ESCAPE '\\' COLLATE NOCASE
+        GROUP BY ${column} COLLATE NOCASE
+        ORDER BY ${column} COLLATE NOCASE ASC
+        LIMIT @limit
+      `
+    )
+    .all({
+      query: `%${escapeLikePattern(nextQuery)}%`,
+      limit: nextLimit
+    }) as QrLogSuggestionRow[]
+
+  return rows.map((row) => row.value)
 }
