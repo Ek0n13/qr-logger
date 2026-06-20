@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@renderer/components/ui/button'
+import { Badge } from '@renderer/components/ui/badge'
 import {
   Sidebar,
   SidebarFooter,
@@ -59,7 +60,7 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
   const isUpdateChecking = updateStatus.status === 'checking'
   const isUpdateBusy = updateStatus.status === 'checking' || updateStatus.status === 'downloading'
   const showUpdateBadge = isUpdateChecking || hasUpdate || hasUpdateError
-  const updateBadgeText = hasUpdate ? '1' : hasUpdateError ? '!' : '...'
+  const updateBadgeText = hasUpdate ? '1' : !hasUpdateError ? '!' : '...'
 
   useEffect(() => {
     let isMounted = true
@@ -124,31 +125,29 @@ function AppSidebar({ children }: AppSidebarProps): React.JSX.Element {
         </SidebarHeader>
 
         <SidebarFooter className="mt-auto items-center p-1">
-          <div className="relative flex justify-center">
+          <Button
+            className="relative cursor-pointer"
+            variant="ghost"
+            size="icon-lg"
+            aria-label={updateStatus.message}
+            title={updateStatus.message}
+            disabled={isUpdateBusy || !hasUpdate}
+            onClick={handleUpdateClick}
+          >
             {showUpdateBadge && (
-              <span
+              <Badge
                 className={cn(
-                  'pointer-events-none absolute -right-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none text-white shadow-sm',
+                  'size-4 pointer-events-none absolute -right-0.5 -top-1 z-10 min-w-5 rounded-full px-1 text-white tabular-nums shadow-sm',
                   hasUpdateError ? 'bg-red-600' : 'bg-blue-600',
                   isUpdateChecking && 'animate-pulse'
                 )}
                 aria-hidden="true"
               >
                 {updateBadgeText}
-              </span>
+              </Badge>
             )}
-            <Button
-              className="cursor-pointer"
-              variant="ghost"
-              size="icon-lg"
-              aria-label={updateStatus.message}
-              title={updateStatus.message}
-              disabled={isUpdateBusy || !hasUpdate}
-              onClick={handleUpdateClick}
-            >
-              <ArrowUpFromLine className="size-6" />
-            </Button>
-          </div>
+            <ArrowUpFromLine className="size-6" />
+          </Button>
         </SidebarFooter>
       </Sidebar>
 
