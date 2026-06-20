@@ -7,7 +7,44 @@ export type UpdateStatus = {
   percent?: number
 }
 
+export type QrLogRecord = {
+  id: number
+  qrCode: string
+  name: string
+  created: string
+  updated: string
+  deleted: string | null
+}
+
+export type QrLogFilters = {
+  name?: string
+  createdFrom?: string
+  createdTo?: string
+  updatedFrom?: string
+  updatedTo?: string
+  includeDeleted?: boolean
+}
+
+export type QrLogInput = {
+  qrCode: string
+  name: string
+}
+
 export const api = {
+  qrLogs: {
+    create: (input: QrLogInput): Promise<QrLogRecord> =>
+      ipcRenderer.invoke('qr-logs:create', input),
+
+    update: (input: QrLogInput): Promise<QrLogRecord | null> =>
+      ipcRenderer.invoke('qr-logs:update', input),
+
+    markDeleted: (qrCode: string): Promise<QrLogRecord | null> =>
+      ipcRenderer.invoke('qr-logs:delete', { qrCode }),
+
+    list: (filters?: QrLogFilters): Promise<QrLogRecord[]> =>
+      ipcRenderer.invoke('qr-logs:list', filters)
+  },
+
   updates: {
     check: (): Promise<UpdateStatus> => ipcRenderer.invoke('updates:check'),
 

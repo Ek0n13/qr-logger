@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
 import icon from '../../resources/icon.png?asset'
+import { closeQrLogDatabase } from './database'
+import { registerQrLogIpcHandlers } from './qr-logs-ipc'
 
 let mainWindow: BrowserWindow | null = null
 let hasCheckedForUpdates = false
@@ -159,6 +161,7 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   configureUpdates()
+  registerQrLogIpcHandlers()
   createWindow()
 
   app.on('activate', function () {
@@ -175,6 +178,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  closeQrLogDatabase()
 })
 
 // In this file you can include the rest of your app's specific main process
