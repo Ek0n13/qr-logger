@@ -1,5 +1,5 @@
 appId: com.ek0n13.qrlogger
-productName: qr-logger
+productName: QR Logger
 directories:
   buildResources: build
 files:
