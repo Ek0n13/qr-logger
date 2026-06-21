@@ -144,6 +144,10 @@ function getProductSuggestions(query: string): Promise<string[]> {
   return window.api.qrLogs.suggestProducts(query)
 }
 
+function isActiveQrLog(record: Awaited<ReturnType<(typeof window.api.qrLogs)['get']>>): boolean {
+  return record?.deleted === null
+}
+
 function ScanPage(): React.JSX.Element {
   const [qrCode, setQrCode] = useState('')
   const [name, setName] = useState('')
@@ -171,7 +175,7 @@ function ScanPage(): React.JSX.Element {
 
     setIsCheckingQrCode(true)
     const [existingQrCode, error] = await tryCatch.async(
-      () => window.api.qrLogs.get(nextQrCode, true),
+      () => window.api.qrLogs.get(nextQrCode),
       'Check QR code'
     )
     setIsCheckingQrCode(false)
@@ -182,8 +186,10 @@ function ScanPage(): React.JSX.Element {
       return
     }
 
-    setQrCodeExists(Boolean(existingQrCode))
-    setShowNameInput(!existingQrCode)
+    const activeQrCodeExists = isActiveQrLog(existingQrCode)
+
+    setQrCodeExists(activeQrCodeExists)
+    setShowNameInput(!activeQrCodeExists)
   }
 
   async function handleNameSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -210,6 +216,16 @@ function ScanPage(): React.JSX.Element {
     setIsSavingQrCode(false)
 
     if (error) {
+      const [existingQrCode] = await tryCatch.async(
+        () => window.api.qrLogs.get(nextQrCode),
+        'Check QR code after create failure'
+      )
+
+      if (!isActiveQrLog(existingQrCode)) {
+        toast.error(error.message)
+        return
+      }
+
       setQrCodeExists(true)
       setShowNameInput(false)
       return

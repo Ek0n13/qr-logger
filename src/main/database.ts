@@ -106,13 +106,32 @@ function ensureSchema(db: Database.Database): void {
     db.exec(`ALTER TABLE qr_logs ADD COLUMN product TEXT NOT NULL DEFAULT ''`)
   }
 
+  runMigrations(db)
+
   db.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_qr_logs_qr_code ON qr_logs (qr_code);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_name ON qr_logs (name COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_product ON qr_logs (product COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_created ON qr_logs (created);
     CREATE INDEX IF NOT EXISTS idx_qr_logs_updated ON qr_logs (updated);
   `)
+}
+
+function runMigrations(db: Database.Database): void {
+  const schemaVersion = Number(db.pragma('user_version', { simple: true }))
+
+  if (schemaVersion < 1) {
+    db.transaction(() => {
+      db.exec(`
+        DROP INDEX IF EXISTS idx_qr_logs_qr_code;
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_qr_logs_active_qr_code
+        ON qr_logs (qr_code)
+        WHERE deleted IS NULL;
+
+        PRAGMA user_version = 1;
+      `)
+    })()
+  }
 }
 
 export function getQrLogDatabase(): Database.Database {
