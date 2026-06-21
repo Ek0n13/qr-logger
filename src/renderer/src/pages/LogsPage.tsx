@@ -187,18 +187,17 @@ function LogsPage(): React.JSX.Element {
                 ) : groupedLogs.length > 0 ? (
                   groupedLogs.map((group) => [
                     <TableRow key={group.date} className="hover:bg-transparent">
-                      <TableCell
-                        colSpan={4}
-                        className="bg-muted/50 text-muted-foreground py-2 text-xs font-medium tracking-wide uppercase"
-                      >
+                      <TableCell colSpan={4} className="py-2 font-medium tracking-wide">
                         Updated {group.date}
                       </TableCell>
                     </TableRow>,
                     ...group.logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="w-px min-w-40">{log.name}</TableCell>
-                        <TableCell className="w-px min-w-40">{log.product}</TableCell>
-                        <TableCell className="w-px min-w-32">{formatDate(log.created)}</TableCell>
+                        <TableCell className="w-px min-w-40 text-lg">{log.name}</TableCell>
+                        <TableCell className="w-px min-w-40 text-lg">{log.product}</TableCell>
+                        <TableCell className="w-px min-w-32 text-lg">
+                          {formatDate(log.created)}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <LogButton
