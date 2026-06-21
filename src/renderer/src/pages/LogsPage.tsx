@@ -10,9 +10,10 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
+import { DeleteQrLogDialog } from '@renderer/components/DeleteQrLogDialog'
 import { EditQrLogDialog } from '@renderer/components/EditQrLogDialog'
 import { AppInput, LogButton } from '@renderer/components/AppFormControls'
-import { ClipboardCopy, Trash2 } from 'lucide-react'
+import { ClipboardCopy } from 'lucide-react'
 
 type QrLogRecord = Awaited<ReturnType<(typeof window.api.qrLogs)['list']>>[number]
 
@@ -118,7 +119,7 @@ function LogsPage(): React.JSX.Element {
     toast.success('QR code copied to clipboard')
   }
 
-  async function handleDeleteQrLog(log: QrLogRecord): Promise<void> {
+  async function handleDeleteQrLog(log: QrLogRecord): Promise<boolean> {
     const [deletedLog, error] = await tryCatch.async(
       () => window.api.qrLogs.markDeleted(log.qrCode),
       'Delete QR log'
@@ -126,16 +127,17 @@ function LogsPage(): React.JSX.Element {
 
     if (error) {
       toast.error(error.message)
-      return
+      return false
     }
 
     if (!deletedLog) {
       toast.error('QR log was not found or was already deleted')
-      return
+      return false
     }
 
     setLogs((currentLogs) => currentLogs.filter((currentLog) => currentLog.qrCode !== log.qrCode))
     toast.success('QR log deleted')
+    return true
   }
 
   function handleUpdateQrLog(updatedLog: QrLogRecord): void {
@@ -210,16 +212,7 @@ function LogsPage(): React.JSX.Element {
                               <ClipboardCopy className="size-6" />
                             </LogButton>
                             <EditQrLogDialog log={log} onUpdated={handleUpdateQrLog} />
-                            <LogButton
-                              type="button"
-                              variant="default"
-                              className="text-red-700"
-                              size="sm"
-                              aria-label={`Delete ${log.name}`}
-                              onClick={() => void handleDeleteQrLog(log)}
-                            >
-                              <Trash2 className="size-6" />
-                            </LogButton>
+                            <DeleteQrLogDialog log={log} onDeleted={handleDeleteQrLog} />
                           </div>
                         </TableCell>
                       </TableRow>
