@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
+import { EditQrLogDialog } from '@renderer/components/EditQrLogDialog'
 import { AppInput, LogButton } from '@renderer/components/AppFormControls'
-import { ClipboardCopy, PenLine, Trash2 } from 'lucide-react'
+import { ClipboardCopy, Trash2 } from 'lucide-react'
 
 type QrLogRecord = Awaited<ReturnType<(typeof window.api.qrLogs)['list']>>[number]
 
@@ -137,6 +138,14 @@ function LogsPage(): React.JSX.Element {
     toast.success('QR log deleted')
   }
 
+  function handleUpdateQrLog(updatedLog: QrLogRecord): void {
+    setLogs((currentLogs) =>
+      currentLogs.map((currentLog) =>
+        currentLog.qrCode === updatedLog.qrCode ? updatedLog : currentLog
+      )
+    )
+  }
+
   return (
     <main className="flex h-screen min-h-0 overflow-hidden px-6 py-6">
       <section className="flex min-h-0 w-full flex-col gap-6">
@@ -158,9 +167,9 @@ function LogsPage(): React.JSX.Element {
             />
           </div>
 
-          <div className="min-h-0 flex-1 **:data-[slot=table-container]:h-full **:data-[slot=table-container]:overflow-auto">
+          <div className="min-h-0 flex-1 border-2 rounded-md bg-white **:data-[slot=table-container]:h-full **:data-[slot=table-container]:overflow-auto">
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-zinc-300">
+              <TableHeader className="sticky top-0 z-10 bg-white">
                 <TableRow>
                   <TableHead className="w-px min-w-40">Name</TableHead>
                   <TableHead className="w-px min-w-40">Product</TableHead>
@@ -201,14 +210,7 @@ function LogsPage(): React.JSX.Element {
                             >
                               <ClipboardCopy className="size-6" />
                             </LogButton>
-                            <LogButton
-                              type="button"
-                              variant="default"
-                              size="sm"
-                              aria-label={`Edit ${log.name}`}
-                            >
-                              <PenLine className="size-6" />
-                            </LogButton>
+                            <EditQrLogDialog log={log} onUpdated={handleUpdateQrLog} />
                             <LogButton
                               type="button"
                               variant="default"
