@@ -253,6 +253,7 @@ function ScanPage(): React.JSX.Element {
           <form className="flex gap-2" onSubmit={handleQrCodeSubmit}>
             <AppInput
               type="search"
+              autoFocus
               value={qrCode}
               placeholder="QR code"
               aria-label="QR code"
