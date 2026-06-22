@@ -15,6 +15,7 @@ import { ClipboardCopy } from 'lucide-react'
 import { useState } from 'react'
 
 import { AppInput, LogButton } from '@renderer/components/AppFormControls'
+import { DateFilterPicker } from '@renderer/components/DateFilterPicker'
 import { DeleteQrLogDialog } from '@renderer/components/DeleteQrLogDialog'
 import { EditQrLogDialog } from '@renderer/components/EditQrLogDialog'
 import {
@@ -25,6 +26,7 @@ import {
   TableHeader,
   TableRow
 } from '@renderer/components/ui/table'
+import { cn } from '@renderer/lib/utils'
 
 type QrLogRecord = Awaited<ReturnType<(typeof window.api.qrLogs)['list']>>[number]
 
@@ -187,28 +189,22 @@ function LogsTable({
         />
 
         <div className="flex flex-wrap gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Created date
-            <AppInput
-              type="date"
-              value={createdFilter}
-              onChange={(event) => table.getColumn('created')?.setFilterValue(event.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Updated date
-            <AppInput
-              type="date"
-              value={updatedFilter}
-              onChange={(event) => table.getColumn('updated')?.setFilterValue(event.target.value)}
-            />
-          </label>
+          <DateFilterPicker
+            label="Created date"
+            value={createdFilter}
+            onChange={(value) => table.getColumn('created')?.setFilterValue(value)}
+          />
+          <DateFilterPicker
+            label="Updated date"
+            value={updatedFilter}
+            onChange={(value) => table.getColumn('updated')?.setFilterValue(value)}
+          />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 rounded-md border-2 bg-white **:data-[slot=table-container]:h-full **:data-[slot=table-container]:overflow-auto">
+      <div className="p-1 min-h-0 flex-1 rounded-md border-2 bg-white **:data-[slot=table-container]:h-full **:data-[slot=table-container]:overflow-auto">
         <Table>
-          <TableHeader className="sticky top-0 bg-white">
+          <TableHeader className="sticky top-0 bg-white shadow-[0_1px_0_0_black]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -217,13 +213,14 @@ function LogsTable({
                   return (
                     <TableHead
                       key={header.id}
-                      className={
+                      className={cn(
+                        'text-lg',
                         header.column.id === 'actions'
                           ? 'text-right'
                           : header.column.getCanSort()
                             ? 'cursor-pointer select-none'
                             : undefined
-                      }
+                      )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder
@@ -251,7 +248,7 @@ function LogsTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="text-lg">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
